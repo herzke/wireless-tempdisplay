@@ -2,11 +2,14 @@
 #include <U8g2lib.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
+#include <ESP8266WebServer.h>
+#include <ESP8266HTTPUpdateServer.h>
 
 /* The following source file is not checked into github.  It contains
  * preprocessor definitions for my network like these:
 #define MY_SSID "MyWirelessSSID"
 #define MY_PSK  "Password for my wireleess network"
+#define MY_UPDATE_PASS "Password for OTA update"
 #define MY_HTTP_SERVER_IP "192.168.0.1"
 #define MY_HTTP_SERVER_PORT 80
 #define MY_HTTP_REQUEST "GET /rest/items/Temperature/state HTTP/1.1\r\n" \
@@ -22,6 +25,10 @@
 #define DISPLAY_DATA_COMMAND_PIN D0
 #define DISPLAY_CHIP_SELECT_PIN  D8
 #define DISPLAY_NO_ROTATION U8G2_R0
+const char* host = "esptempdisplay";
+
+ESP8266WebServer httpServer(80);
+ESP8266HTTPUpdateServer httpUpdater;
 
 U8G2_SSD1306_128X64_NONAME_1_4W_SW_SPI
   display(DISPLAY_NO_ROTATION,
@@ -34,6 +41,7 @@ U8G2_SSD1306_128X64_NONAME_1_4W_SW_SPI
 void setup_wifi() {
   // Set WiFi mode to station (client) and initiate connection
   WiFi.mode(WIFI_STA);
+  WiFi.hostname(host);
   WiFi.begin(MY_SSID, MY_PSK);
 }
 
@@ -46,6 +54,10 @@ void setup() {
   setup_wifi();
   Serial.begin(115200);
   display.begin();
+
+  httpUpdater.setup(&httpServer, "update", MY_UPDATE_PASS);
+  httpServer.begin();
+
 }
 
 float get_temp() {
