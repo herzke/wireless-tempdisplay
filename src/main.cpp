@@ -40,6 +40,7 @@ void setup_wifi() {
 bool wifi_connected = false;
 float temperature = -300;
 int failed_attempts = 0;
+int unchanged_readings = 0;
 
 void setup() {
   setup_wifi();
@@ -86,7 +87,7 @@ void update_display() {
     // use sprintf to place an iso-8859-1 ß into the string Draußen that is
     // shown when we have no error.
     snprintf(str_connected, 20, "Drau%cen", 0xDF);
-    str_failed = "";
+    str_failed = String(unchanged_readings);
   }
   else {
     // We have either a WLAN or TCP error.
@@ -120,13 +121,19 @@ void loop() {
 
   // wait some time
   delay(5000);
+  httpServer.handleClient();
 
   // update the wifi and temperature reading
   wifi_connected = WiFi.status() == WL_CONNECTED;
   float new_temperature = get_temp();
 
+  if (new_temperature == temperature)
+    unchanged_readings++;
+  else
+    unchanged_readings = 0;
+
   // check if temperature is valid
-  if (new_temperature > -280) {
+  if (new_temperature > -280 && unchanged_readings < 200) {
     temperature = new_temperature;
     failed_attempts = 0;
   }
